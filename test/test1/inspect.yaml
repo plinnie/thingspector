@@ -1,0 +1,39 @@
+# Source directory
+# May also be added/appended at module level
+srcdirs:
+  - src
+
+# Include directory
+# May also be added/appended at module level
+incdirs:
+  - inc
+
+
+# TODO: Mock files, creates empty stubs
+# mock mockfile:
+#   target: mockfile.c
+
+# TODO: Simulation files, can be used to simulate behaviour otherwise dependent on architecture specific things
+# sim simfile:
+#   target: simfile.c
+
+
+# Module under test declaration
+test helloworld:
+  # Target compile-file. When auto-create-tests is true (default) it will search this file for
+  # testable function prototypes.
+  target: helloworld.c
+  #
+
+  # # When set to true automatically creates / adds test cases for functions.
+  # auto-create-tests: false/true
+  #
+  # # Use this blacklist to stop thingspector for creating test cases of specific found functions.
+  # auto-create-blacklist:
+  #   - <case>
+  #  [- <more
+  #   - cases>]
+  #
+  # # Adds header files to the test, if set replaces automatic (simply exchange .c to .h for target)
+  # headers:
+  #   - <module>.h
