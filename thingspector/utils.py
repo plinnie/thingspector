@@ -75,6 +75,7 @@ class Path:
         others_t = (os.path.getmtime(other) for other in others)
 
         if newer:
+
             for other_t in others_t:
                 if other_t > self_t:
                     return False
@@ -90,14 +91,14 @@ class Path:
             Check if this file is newer than all of the others.
         """
 
-        return self.__is_newer_or_older(*others, True)
+        return self.__is_newer_or_older(*others, newer=True)
 
     def is_older(self, *others):
         """
             Check if this file is older than any of the others.
         """
 
-        return self.__is_newer_or_older(*others, False)
+        return self.__is_newer_or_older(*others, newer=False)
 
     def mkdirs(self):
         """

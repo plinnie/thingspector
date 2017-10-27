@@ -16,14 +16,19 @@ if __name__ == "__main__":
         print_help();
         sys.exit(0)
 
-    if sys.argv[1] == 'u':
-        mf = ThingConfig()
+    try:
+        if sys.argv[1] == 'u':
+            mf = ThingConfig()
 
-        for test in mf.tests.values():
-            tr.update_test(test)
+            for test in mf.tests.values():
+                tr.update_test(test)
 
-    elif sys.argv[1] == 't':
-        mf = ThingConfig()
+        elif sys.argv[1] == 't':
+            mf = ThingConfig()
 
-        for test in mf.tests.values():
-            tr.execute_test(test)
+            for test in mf.tests.values():
+
+                tr.execute_test(test)
+    except RuntimeError as e:
+        print("Error: %s" % e)
+        sys.exit(1)

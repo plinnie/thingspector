@@ -14,7 +14,6 @@ class TestConfig:
         self.target = yaml_section.get("target", name + ".c")
         # Module Under Test directory
 
-
         # Copy source directories
         self.srcdirs = Path.to_paths(yaml_section.get("srcdirs", [])) + p.srcdirs
         self.incdirs = Path.to_paths(yaml_section.get("incdirs", [])) + p.incdirs
@@ -46,6 +45,9 @@ class ThingConfig:
         self.__load_file(filename)
 
     def __load_file(self, filename):
+        if not utils.Path(filename).is_file():
+            raise RuntimeError("Expected " + filename + " at working directory")
+
         with open(filename, "r") as stream:
             y = yaml.load(stream, Loader=yaml.CLoader)
 

@@ -96,6 +96,7 @@ int main( int argc, const char* argv[] )
         }
         test_teardown();
     }
+    return 0;
 }
 """
 

@@ -1,9 +1,9 @@
 import os
-import shutil
 from thingspector import compiler
 import pycparser as cp
 from thingspector import templates as tpl
-from thingspector import utils
+from thingspector.utils import log, exec2str, parse_c,exec4iter
+import subprocess
 
 
 def show_attrs(obj):
@@ -58,7 +58,7 @@ class TestRunner:
         for incdir in self.desc.incdirs:
             pp_directives.append("-I" + incdir.abs_str())
 
-        ast = utils.parse_c(self.modpath.abs_str(),*pp_directives)
+        ast = parse_c(self.modpath.abs_str(),*pp_directives)
 
         predeclares = []
 
@@ -128,7 +128,7 @@ class TestRunner:
         for incdir in self.desc.incdirs:
             pp_directives.append("-I" + incdir.abs_str())
 
-        ast = utils.parse_c(self.desc.testsrc.abs_str(), *pp_directives)
+        ast = parse_c(self.desc.testsrc.abs_str(), *pp_directives)
 
         has_setup = False
         has_teardown = False
@@ -231,7 +231,8 @@ class TestRunner:
 
         if self.desc.testbin.is_file() and self.desc.testbin.is_newer(self.desc.testsrc, self.modpath,
            self.desc.runnersrc):
-            return
+            log.trace("No need to recompile runner")
+            # return
 
         # TODO: check if file really needs to be compiled
         global _compilers
@@ -244,7 +245,8 @@ class TestRunner:
         # TODO: select wanted compiler (highest GCC version?)
         # For now we'll just take the first
         comp = _compilers[0]
-        comp.compile(self.desc.testbin.abs_str(), self.desc.testsrc, self.modpath, self.desc.runnersrc, includepaths=self.desc.incdirs)
+        comp.compile(self.desc.testbin.abs_str(), self.desc.testsrc, self.modpath, self.desc.runnersrc,
+                     includepaths=self.desc.incdirs)
 
     def __execute_test(self, *params):
         assert_file = None
@@ -254,14 +256,15 @@ class TestRunner:
         assert_failed = 0
         fatal = False
         try:
-            for line in utils.exec4iter(self.desc.testbin.abs_str(), *params):
+            for line in exec4iter(self.desc.testbin.abs_str(), *params):
                 line = line.strip()
+
                 if len(line) == 0:
                     continue
 
                 # Console output
                 if not line.startswith("$$"):
-                    utils.log.warning("   Console output: %(output)s", output=line)
+                    log.warning("   Console output: %(output)s", output=line)
                     continue
 
                 p = line.split(":")
@@ -270,34 +273,34 @@ class TestRunner:
 
                 if cmd == "CASE" and len(par) == 1:
                     case = par[0]
-                    utils.log.verbose(" Case %(case)s", case=case)
+                    log.verbose(" Case %(case)s", case=case)
                 elif cmd == "ASSERT_BEGIN" and len(par) == 2:
                     assert_file = par[0]
                     assert_line = int(par[1])
                     assert_count += 1
-                elif cmd == "ASSERT_END" and len(par) == 1:
+                elif cmd == "ASSERT_END" and len(par) >= 1:
                     if par[0] != "OK":
-                        utils.log.warning("  Assertion at %(file)s:%(line)d failed",
-                                          file=assert_file, line=assert_line)
+                        log.warning("  Assertion at %(file)s:%(line)d failed: %(cause)s",
+                                    file=assert_file, line=assert_line, cause=":".join(par))
                         assert_failed += 1
                     else:
-                        utils.log.trace("  Assertion at %(file)s:%(line)d success",
-                                        file=assert_file, line=assert_line)
+                        log.trace("  Assertion at %(file)s:%(line)d success",
+                                  file=assert_file, line=assert_line)
 
                     assert_file = None
                 else:
-                    utils.log.severe("  Unexpected command sequence: %(seq)", seq=line)
+                    log.severe("  Unexpected command sequence: %(seq)", seq=line)
 
-        except utils.subprocess.CalledProcessError as e:
+        except subprocess.CalledProcessError as e:
             fatal = True
             if assert_file is not None:
-                utils.log.severe("  Assertion at %(file)s:%(line)d exited with code 0x%(code)x",
+                log.severe("  Assertion at %(file)s:%(line)d exited with code 0x%(code)x",
                                  file=assert_file, line=assert_line, code=e.returncode)
             else:
-                utils.log.severe("  Test case %(case)s exited with code 0x%(code)x",
+                log.severe("  Test case %(case)s exited with code 0x%(code)x",
                                  case=case,  code=e.returncode)
 
-        utils.log.info("  Completed %(case)s assertions=%(assert_count)d failed=%(assert_failed)d ",
+        log.info("  Completed %(case)s assertions=%(assert_count)d failed=%(assert_failed)d ",
                        case=case, assert_count=assert_count, assert_failed=assert_failed)
 
         return assert_count, assert_failed, fatal
@@ -306,13 +309,13 @@ class TestRunner:
         """
             Run a test script.
         """
-        capture, rv = utils.exec2str(self.desc.testbin.abs_str())
+        capture, rv = exec2str(self.desc.testbin.abs_str())
         capture = capture.split()
         if len(capture) != 1:
             raise RuntimeError("Failed to run test, unexpected reply")
         no_of_tests = int(capture[0])
 
-        utils.log.verbose("Starting test %(name)s", name=self.desc.name)
+        log.verbose("Starting test %(name)s", name=self.desc.name)
 
         assert_count = 0
         assert_failed = 0
@@ -325,10 +328,10 @@ class TestRunner:
             if fatal:
                 cases_fatal += 1
 
-        utils.log.info(" Test %(name)s completed, cases=%(casen)d (fatal=%(fatal)d), " +
-                       "Assertions total=%(assert_count)d, of which %(assert_failed)d failed",
-                       name=self.desc.name, casen=no_of_tests, fatal=cases_fatal,
-                       assert_count=assert_count, assert_failed=assert_failed)
+        log.info(" Test %(name)s completed, cases=%(casen)d (fatal=%(fatal)d), " +
+                 "Assertions total=%(assert_count)d, of which %(assert_failed)d failed",
+                 name=self.desc.name, casen=no_of_tests, fatal=cases_fatal,
+                 assert_count=assert_count, assert_failed=assert_failed)
 
     def test(self):
         # Should be optimized away
