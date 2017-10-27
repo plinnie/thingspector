@@ -15,7 +15,7 @@
 
 #define EXPECT(V, FAILMSG, ...) _ASSERT(V, __FILE__, __LINE__, FAILMSG, __VA_ARGS__)
 
-#define EXPECT_STR(W, E)    EXPECT(strcmp(W, E) == 0, "Expected " _TOSTR(W) " to return %s but was %s", E, W)
+#define EXPECT_STR(W, E)    EXPECT(strcmp(W, E) == 0, "Expected " _TOSTR(W) " to return \"%s\" but was \"%s\"", E, W)
 #define EXPECT_ULONG(W, E)  EXPECT(W == E, "Expected " _TOSTR(W) " to return %lu but was %lu", E, W)
 #define EXPECT_INT(W, E)    EXPECT(W == E, "Expected " _TOSTR(W) " to return %d but was %d", E, W)
 #define EXPECT_LONG(W, E)   EXPECT(W == E, "Expected " _TOSTR(W) " to return %ld but was %ld", E, W)

@@ -28,7 +28,7 @@ void test_teardown()
 */
 void case_helloWorld()
 {
-    ASSERT_EQ_STR(helloWorld(), "Hello world")
+    EXPECT_STR(helloWorld(), "Hello world")
 }
 
 
@@ -46,5 +46,5 @@ void case_fault()
 */
 void case_helloWorldAgain()
 {
-    ASSERT_EQ_STR(helloWorldAgain(), "Hello world")
+    EXPECT_STR(helloWorldAgain(), "Hello world")
 }
