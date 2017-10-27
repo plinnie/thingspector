@@ -1,8 +1,9 @@
 /*
     Module Under Test test-file for module helloworld
 */
-#include "mut.h"
+#include "thingspector.h"
 #include "helloworld.h"
+#include <stdbool.h>
 
 /*
   This function will be invoked before each test is run. 
@@ -19,9 +20,10 @@ void test_teardown()
 }
 
 
+
 /*
     Test stub for function helloWorld.
-    
+
     Function signature: TODO
 */
 void case_helloWorld()
@@ -33,12 +35,13 @@ void case_helloWorld()
 
 void case_fault()
 {
-    // Intentially generate fault
+    // Intentional fault
     *(int*)0 = 0;
 }
+
 /*
     Test stub for function helloWorldAgain.
-    
+
     Function signature: TODO
 */
 void case_helloWorldAgain()

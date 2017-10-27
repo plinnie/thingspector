@@ -5,7 +5,7 @@ from thingspector import utils
 
 class TestConfig:
     """
-        Representation of a MUT module (under test).
+        Representation of a Test (module) config.
     """
 
     def __init__(self, p, name, yaml_section):
@@ -35,14 +35,14 @@ class TestConfig:
         # print("Module %s, target=%s" % (name, self.target))
 
 
-class SuiteConfig:
+class ThingConfig:
     """
-        Representation of a MUT Yaml file
+        Representation of a Thingspector Yaml file
     """
 
     __TEST_KEY = "test "
 
-    def __init__(self, filename="mut.yaml"):
+    def __init__(self, filename="inspect.yaml"):
         self.__load_file(filename)
 
     def __load_file(self, filename):
@@ -53,11 +53,11 @@ class SuiteConfig:
         self.incdirs = Path.to_paths(y.get('incdirs', ['.']))
         self.headers = Path.to_paths(y.get('headers', []))
         self.tests = {}
-        self.dir = Path(y.get('testdir', 'mut'))
+        self.dir = Path(y.get('testdir', 'inspect'))
         self.testdir = Path(self.dir, 'tests')
         self.workdir = self.dir + '.work'
 
         for key in y:
-            if key.startswith(SuiteConfig.__TEST_KEY):
-                name = key[len(SuiteConfig.__TEST_KEY):].strip()
+            if key.startswith(ThingConfig.__TEST_KEY):
+                name = key[len(ThingConfig.__TEST_KEY):].strip()
                 self.tests[name] = TestConfig(self, name, y[key])

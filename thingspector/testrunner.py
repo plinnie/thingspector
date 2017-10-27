@@ -29,7 +29,6 @@ class TestRunner:
     # ===============================================================================================================
     #  Section related to updating the test
     # ===============================================================================================================
-
     def __check_dirs(self):
         if not self.desc.p.testdir.is_dir():
             self.desc.p.testdir.mkdirs()
@@ -37,14 +36,12 @@ class TestRunner:
         if not self.desc.p.workdir.is_dir():
             self.desc.p.workdir.mkdirs()
 
-
     def __find_module(self):
         if self.modpath is not None:
             return
 
         for srcdir in self.desc.srcdirs:
             mpc = srcdir + self.desc.target
-            print(srcdir, self.desc.target)
             if mpc.is_file():
                 self.modpath = mpc
                 return
@@ -190,6 +187,12 @@ class TestRunner:
         """
             Updates the test runner (actually just creates it)
         """
+        if self.desc.runnersrc.is_file() and self.desc.runnersrc.is_newer(self.desc.testsrc):
+            return
+
+        if self.cases is None:
+            self.__index_test_cases();
+
         with open(self.desc.runnersrc.abs_str(), "w") as stream:
 
             casefuncstr = []
@@ -219,15 +222,17 @@ class TestRunner:
         # parse C file
         self.__index_mod_file()
         # generate/update test file
-        upd_runner = self.__create_or_update_test_file()
-
-        if upd_runner or not self.desc.runnersrc.is_file():
-            self.__update_runner()
+        self.__create_or_update_test_file()
 
     # ===============================================================================================================
     #  Section related to running the test
     # ===============================================================================================================
     def __compile_module(self):
+
+        if self.desc.testbin.is_file() and self.desc.testbin.is_newer(self.desc.testsrc, self.modpath,
+           self.desc.runnersrc):
+            return
+
         # TODO: check if file really needs to be compiled
         global _compilers
         if _compilers is None:
@@ -240,7 +245,6 @@ class TestRunner:
         # For now we'll just take the first
         comp = _compilers[0]
         comp.compile(self.desc.testbin.abs_str(), self.desc.testsrc, self.modpath, self.desc.runnersrc, includepaths=self.desc.incdirs)
-
 
     def __execute_test(self, *params):
         assert_file = None
@@ -326,10 +330,12 @@ class TestRunner:
                        name=self.desc.name, casen=no_of_tests, fatal=cases_fatal,
                        assert_count=assert_count, assert_failed=assert_failed)
 
-
     def test(self):
         # Should be optimized away
         self.__find_module()
+
+        self.__update_runner()
+
         # Compile it
         self.__compile_module()
         # Run the tests

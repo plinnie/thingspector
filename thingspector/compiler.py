@@ -1,7 +1,7 @@
 import os
 from thingspector import utils
 from thingspector.utils import Path
-
+from thingspector.utils import log
 
 class Compiler:
     """
@@ -64,11 +64,13 @@ class GccCompiler(Compiler):
         return "GCC"
 
     def compile(self, outfile, *srcfiles, includepaths=[]):
+        log.verbose("Compiling %(outfile)s from %(sources)s", outfile=outfile, sources=srcfiles)
         path_items = [self.executable]
         path_items.append("-o%s" % outfile)
         for incpath in includepaths:
             path_items.append("-I%s" % incpath)
         path_items += Path.to_strings(srcfiles)
+        output, _ = utils.exec2str(*path_items)
 
 
 

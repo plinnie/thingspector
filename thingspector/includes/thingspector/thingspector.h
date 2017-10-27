@@ -1,5 +1,8 @@
-#ifndef _MUT_H_
-#define _MUT_H_
+#ifndef _THINGSPECTOR_H_
+#define _THINGSPECTOR_H_
+/*
+    Thingspector include header file for tests.
+ */
 
 #define __TOSTR(S)   #S
 #define _TOSTR(S)    __TOSTR(S)
@@ -12,4 +15,4 @@
 
 #define ASSERT_EQ_STR(A, B) ASSERT(strcmp(A, B) == 0)
 
-#endif
+#endif  // _THINGSPECTOR_H_

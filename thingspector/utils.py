@@ -13,7 +13,7 @@ IS_WINDOWS = os.name == 'nt'
 EXEC_EXTENSION = ".exe" if IS_WINDOWS else ""
 INCLUDE_ROOT = os.path.join(os.path.dirname(__file__), "includes")
 INCLUDE_FAKE_LIB_C = os.path.join(INCLUDE_ROOT, "fake_libc")
-INCLUDE_MUT = os.path.join(INCLUDE_ROOT, "mut")
+INCLUDE_MUT = os.path.join(INCLUDE_ROOT, "thingspector")
 
 
 def exec2str(*path_list):
@@ -57,15 +57,60 @@ class Path:
         return p
 
     def is_file(self):
+        """
+        Check if it is a file which exists.
+        """
         return os.path.isfile(self.path)
 
     def is_dir(self):
+        """
+        Check if it is a directory which exists.
+        """
         return os.path.isdir(self.path)
 
+    def __is_newer_or_older(self, *others, newer=False):
+        others = [other.path if isinstance(other, Path) else other for other in others]
+
+        self_t = os.path.getmtime(self.path)
+        others_t = (os.path.getmtime(other) for other in others)
+
+        if newer:
+            for other_t in others_t:
+                if other_t > self_t:
+                    return False
+            return True
+
+        for other_t in others_t:
+            if self_t < other_t:
+                return True
+        return False
+
+    def is_newer(self, *others):
+        """
+            Check if this file is newer than all of the others.
+        """
+
+        return self.__is_newer_or_older(*others, True)
+
+    def is_older(self, *others):
+        """
+            Check if this file is older than any of the others.
+        """
+
+        return self.__is_newer_or_older(*others, False)
+
     def mkdirs(self):
+        """
+            Makes all directories in this path which do not exist
+        """
+
         os.makedirs(self.path)
 
     def join(self, other):
+        """
+            Joins all of them
+        """
+
         if isinstance(other, Path):
             self.path = os.path.join(self.path, other.path)
         elif isinstance(other, str):
@@ -76,6 +121,10 @@ class Path:
             raise ValueError("Can only add Path of str to Path or tuple of strings/Paths")
 
     def abs_str(self):
+        """
+            To absolute string path
+        """
+
         return os.path.abspath(self.path)
 
     def __str__(self):
@@ -105,6 +154,9 @@ class bc:
     UNDERLINE = '\033[4m'
 
 class Log:
+    """
+        Lightweight logger.
+    """
 
     TRACE, VERBOSE, INFO, WARNING, SEVERE = range(5)
 

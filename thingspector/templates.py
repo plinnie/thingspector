@@ -12,9 +12,9 @@
 #
 C_TEST_HEADER = """\
 /*
-    Module Under Test test-file for module %(module)s
+    Thingspector test-file for module %(module)s
 */
-#include "mut.h"
+#include "thingspector.h"
 %(includes)s
 
 /*
