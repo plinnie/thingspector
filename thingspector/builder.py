@@ -202,6 +202,9 @@ class Build:
     def add_symbol(self, name, value=None):
         self.symbols[name] = value
 
+    def add_symbols(self, **kwargs):
+        self.symbols.update(kwargs)
+
     def add_src(self, *srcfiles):
 
         for srcfile in srcfiles:

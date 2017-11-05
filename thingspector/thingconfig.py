@@ -25,6 +25,11 @@ class TestConfig:
         else:
             header_guess = []
 
+        self.symbols = yaml_section.get("symbols", {})
+        self.symbols.update(p.symbols)
+
+        print(self.symbols)
+
         self.static_inline = set(yaml_section.get("static-inline", []))
 
         self.headers = yaml_section.get("headers", header_guess) + p.headers
@@ -62,6 +67,11 @@ class ThingConfig:
         self.testdir = Path(self.dir, 'tests')
         self.workdir = self.dir + '.work'
         self.mockdir = self.workdir + 'mocks'
+
+        self.id_symbol = y.get('idsymbol', 'TEST')
+        self.symbols = y.get('symbols', {})
+        self.symbols[self.id_symbol] = None
+
 
         for key in y:
             if key.startswith(ThingConfig.__TEST_KEY):

@@ -30,6 +30,7 @@ class Tester:
     def __populate_builder(self):
         self.builder.add_src(self.modpath, self.desc.testsrc, self.desc.runnersrc)
         self.builder.add_inc_path(*self.desc.incdirs)
+        self.builder.add_symbols(**self.desc.symbols)
 
 
     # ===============================================================================================================
