@@ -1,8 +1,8 @@
 import os
-from thingspector import compiler
+from thingspector import builder
 import pycparser as cp
 from thingspector import templates as tpl
-from thingspector.utils import log, exec2str, parse_c,exec4iter
+from thingspector.utils import log, exec2str, exec4iter
 import subprocess
 
 
@@ -16,7 +16,7 @@ _compilers = None
 _path = os.path.dirname(__file__)
 
 
-class TestRunner:
+class Tester:
 
     def __init__(self, test_desc):
         self.desc = test_desc
@@ -25,16 +25,16 @@ class TestRunner:
         self.mod_cases = []
         # Test cases as found in the test file
         self.cases = None
+        self.builder = builder.Build(self.desc.testbin, self.desc.p.workdir)
+
+    def __populate_builder(self):
+        self.builder.add_src(self.modpath, self.desc.testsrc, self.desc.runnersrc)
+        self.builder.add_inc_path(*self.desc.incdirs)
+
 
     # ===============================================================================================================
     #  Section related to updating the test
     # ===============================================================================================================
-    def __check_dirs(self):
-        if not self.desc.p.testdir.is_dir():
-            self.desc.p.testdir.mkdirs()
-
-        if not self.desc.p.workdir.is_dir():
-            self.desc.p.workdir.mkdirs()
 
     def __find_module(self):
         if self.modpath is not None:
@@ -51,14 +51,7 @@ class TestRunner:
         """
             Finds test cases by analyzing the modules C file
         """
-
-        # TODO: cache indexing
-        pp_directives = []
-
-        for incdir in self.desc.incdirs:
-            pp_directives.append("-I" + incdir.abs_str())
-
-        ast = parse_c(self.modpath.abs_str(),*pp_directives)
+        ast = self.builder.parse(self.modpath)
 
         predeclares = []
 
@@ -76,7 +69,9 @@ class TestRunner:
                 is_static = 'static' in decl.storage
                 is_inline = 'inline' in decl.funcspec
 
-                if is_static or is_inline or not is_predeclared:
+                if is_static and is_inline and decl.name in self.desc.static_inline:
+                    pass
+                elif is_static or is_inline or not is_predeclared:
                     continue
 
                 self.mod_cases.append(decl)
@@ -123,12 +118,8 @@ class TestRunner:
 
         found_cases = []
 
-        pp_directives = []
 
-        for incdir in self.desc.incdirs:
-            pp_directives.append("-I" + incdir.abs_str())
-
-        ast = parse_c(self.desc.testsrc.abs_str(), *pp_directives)
+        ast = self.builder.parse(self.desc.testsrc)
 
         has_setup = False
         has_teardown = False
@@ -217,8 +208,9 @@ class TestRunner:
 
     def update(self):
         # check mut dir
-        self.__check_dirs()
         self.__find_module()
+        # create the builder definition
+        self.__populate_builder()
         # parse C file
         self.__index_mod_file()
         # generate/update test file
@@ -229,28 +221,18 @@ class TestRunner:
     # ===============================================================================================================
     def __compile_module(self):
 
+
         if self.desc.testbin.is_file() and self.desc.testbin.is_newer(self.desc.testsrc, self.modpath,
            self.desc.runnersrc):
             log.trace("No need to recompile runner")
             # return
 
-        # TODO: check if file really needs to be compiled
-        global _compilers
-        if _compilers is None:
-            _compilers = compiler.find()
+        self.builder.compile_all()
 
-        if len(_compilers) == 0:
-            raise RuntimeError("No usable compiler found!")
-
-        # TODO: select wanted compiler (highest GCC version?)
-        # For now we'll just take the first
-        comp = _compilers[0]
-        comp.compile(self.desc.testbin.abs_str(), self.desc.testsrc, self.modpath, self.desc.runnersrc,
-                     includepaths=self.desc.incdirs)
 
     def __execute_test(self, *params):
         assert_file = None
-        assert_line = None
+        assert_line = -1
         case = "<unknown>"
         assert_count = 0
         assert_failed = 0
@@ -267,7 +249,7 @@ class TestRunner:
                     log.warning("   Console output: %(output)s", output=line)
                     continue
 
-                p = line.split(":")
+                p = line.split("|")
                 cmd = p[0][2:]
                 par = p[1:]
 
@@ -281,7 +263,7 @@ class TestRunner:
                 elif cmd == "ASSERT_END" and len(par) >= 1:
                     if par[0] != "OK":
                         log.warning("  Assertion at %(file)s:%(line)d failed: %(cause)s",
-                                    file=assert_file, line=assert_line, cause=":".join(par))
+                                    file=assert_file, line=assert_line, cause="|".join(par))
                         assert_failed += 1
                     else:
                         log.trace("  Assertion at %(file)s:%(line)d success",
@@ -289,7 +271,7 @@ class TestRunner:
 
                     assert_file = None
                 else:
-                    log.severe("  Unexpected command sequence: %(seq)", seq=line)
+                    log.severe("  Unexpected command sequence: %(seq)s", seq=line)
 
         except subprocess.CalledProcessError as e:
             fatal = True
@@ -334,8 +316,14 @@ class TestRunner:
                  assert_count=assert_count, assert_failed=assert_failed)
 
     def test(self):
+        """
+            Run the tests on this object.
+        """
         # Should be optimized away
         self.__find_module()
+
+        # populate the builder
+        self.__populate_builder()
 
         self.__update_runner()
 
@@ -344,12 +332,41 @@ class TestRunner:
         # Run the tests
         self.__run_test()
 
+class Mocker:
+    """
+        Generates mock object files.
+    """
+    def __init__(self, test_desc):
+        self.desc = test_desc
+
+    def update(self):
+        self.__check_dirs()
+
+
+def check_dirs(config):
+    if not config.testdir.is_dir():
+        config.testdir.mkdirs()
+
+    if not config.workdir.is_dir():
+        config.workdir.mkdirs()
+
+    if not config.mockdir.is_dir():
+        config.mockdir.mkdirs()
+
 
 def update_test(test):
-    mr = TestRunner(test)
-    mr.update()
+    check_dirs(test.p)
+    tester = Tester(test)
+    tester.update()
 
+def update_mock(mock):
+    check_dirs(mock.p)
+    mocker = Mocker(mock)
+    mocker.update()
 
 def execute_test(test):
-    mr = TestRunner(test)
-    mr.test()
+    check_dirs(test.p)
+    tester = Tester(test)
+    tester.test()
+
+

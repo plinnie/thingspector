@@ -10,10 +10,10 @@
 #define _TOSTR(S)    __TOSTR(S)
 
 #define _ASSERT(V, FILE, LINE, FAILMSG, ...) \
-    puts("$$ASSERT_BEGIN:" FILE ":" _TOSTR(LINE)); \
-    if ((V)) { puts("$$ASSERT_END:OK"); } else { printf("$$ASSERT_END:" FAILMSG, __VA_ARGS__); };
+    puts("$$ASSERT_BEGIN|" FILE "|" _TOSTR(LINE)); \
+    if ((V)) { puts("$$ASSERT_END|OK"); } else { printf("$$ASSERT_END|" FAILMSG "\n", ## __VA_ARGS__); };
 
-#define EXPECT(V, FAILMSG, ...) _ASSERT(V, __FILE__, __LINE__, FAILMSG, __VA_ARGS__)
+#define EXPECT(V, FAILMSG, ...) _ASSERT(V, __FILE__, __LINE__, FAILMSG, ## __VA_ARGS__)
 
 #define EXPECT_STR(W, E)    EXPECT(strcmp(W, E) == 0, "Expected " _TOSTR(W) " to return \"%s\" but was \"%s\"", E, W)
 #define EXPECT_ULONG(W, E)  EXPECT(W == E, "Expected " _TOSTR(W) " to return %lu but was %lu", E, W)

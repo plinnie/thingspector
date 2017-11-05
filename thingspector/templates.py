@@ -56,8 +56,8 @@ C_TEST_CASE = """
 */
 void case_%(case)s()
 {
-    /* Your test code here. Remove ASSERT(false) below. */
-    ASSERT(false)
+    /* Your test code here. Remove EXPECT(false) below. */
+    EXPECT(false, "Case not implemented yet")
 }
 """
 
@@ -116,7 +116,7 @@ C_TEST_RUNNER_CASEFUNCS = "void case_%s();"
 #
 C_TEST_RUNNER_CASESTMTS = """\
         case %(idx)d:
-            puts("$$CASE:%(casename)s");
+            puts("$$CASE|%(casename)s");
             fflush(stdout);
             case_%(casename)s();
             break;"""

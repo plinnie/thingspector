@@ -1,5 +1,5 @@
 from thingspector.thingconfig import ThingConfig
-from thingspector import testrunner as tr
+from thingspector import runner as tr
 import sys
 
 
@@ -19,6 +19,9 @@ if __name__ == "__main__":
     try:
         if sys.argv[1] == 'u':
             mf = ThingConfig()
+
+            for mock in mf.mocks.values():
+                tr.update_mock(mock)
 
             for test in mf.tests.values():
                 tr.update_test(test)

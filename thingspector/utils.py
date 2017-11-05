@@ -1,19 +1,6 @@
 import subprocess
 import os
-import pycparser as cp
-try:
-    import pycparserext.ext_c_parser as ecp
-    PARSER = ecp.GnuCParser
-except _:
-    PARSER = cp.CParser
-
-
-IS_WINDOWS = os.name == 'nt'
-
-EXEC_EXTENSION = ".exe" if IS_WINDOWS else ""
-INCLUDE_ROOT = os.path.join(os.path.dirname(__file__), "includes")
-INCLUDE_FAKE_LIB_C = os.path.join(INCLUDE_ROOT, "fake_libc")
-INCLUDE_MUT = os.path.join(INCLUDE_ROOT, "thingspector")
+import yaml
 
 
 def exec2str(*path_list):
@@ -38,11 +25,6 @@ def exec4iter(*path_list):
         raise subprocess.CalledProcessError(return_code, path_list)
 
 
-def parse_c(file_to_parse, *pp_directives):
-    pp_directives = ["-I"+INCLUDE_FAKE_LIB_C] + list(pp_directives)
-    return cp.parse_file(file_to_parse, use_cpp=True, cpp_args=pp_directives, parser=PARSER())
-
-
 class Path:
     """
         Lightweight path wrapper
@@ -50,6 +32,15 @@ class Path:
 
     def __init__(self, *path):
         self.path = os.path.join(*[str(p) for p in path])
+
+    def __eq__(self, other):
+        return (isinstance(other, Path) and self.path  == other.path)
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
+    def __hash__(self):
+        return hash(self.path)
 
     def __add__(self, other):
         p = Path(self.path)
@@ -67,6 +58,15 @@ class Path:
         Check if it is a directory which exists.
         """
         return os.path.isdir(self.path)
+
+    def exists(self):
+        return os.path.exists(self.path)
+
+    def open(self, mode):
+        return open(self.abs_str(), mode)
+
+    def extend(self, string):
+        return Path(self.path + string)
 
     def __is_newer_or_older(self, *others, newer=False):
         others = [other.path if isinstance(other, Path) else other for other in others]
@@ -91,12 +91,18 @@ class Path:
             Check if this file is newer than all of the others.
         """
 
+        if not self.exists():
+            return False
+
         return self.__is_newer_or_older(*others, newer=True)
 
     def is_older(self, *others):
         """
             Check if this file is older than any of the others.
         """
+
+        if not self.exists():
+            return True
 
         return self.__is_newer_or_older(*others, newer=False)
 
@@ -128,6 +134,9 @@ class Path:
 
         return os.path.abspath(self.path)
 
+    def str(self):
+        return self.path
+
     def __str__(self):
         return self.path
 
@@ -142,6 +151,9 @@ class Path:
     def to_strings(paths):
         return [str(p) for p in paths]
 
+
+yaml.add_representer(Path, lambda dmp, obj: dmp.represent_scalar(u'!path', obj.path))
+yaml.add_constructor(u'!path', lambda ldr, node: Path(ldr.construct_scalar(node)))
 
 class bc:
     HEADER = '\033[95m'
